@@ -1,0 +1,9 @@
+version: "3"
+
+services:
+  server:
+    build: .
+    container_name: spotprices
+    restart: always
+    env_file: 
+      - '.env'
