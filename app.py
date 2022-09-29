@@ -15,7 +15,7 @@ INFLUXDB_ORG = getenv('INFLUXDB_ORG', None)
 INFLUXDB_BUCKET = getenv('INFLUXDB_BUCKET', 'default')
 INFLUXDB_URL = getenv('INFLUXDB_URL', 'http://localhost:8086')
 
-SPOTPRICE_API_URL = "https://api.energidataservice.dk/datastore_search?"
+SPOTPRICE_API_URL = "https://api.energidataservice.dk/dataset/"
 
 # DK1 for DK_WEST and DK2 for DK_EAST
 SPOTPRICE_AREA = getenv('SPOTPRICE_AREA', 'DK2') 
@@ -35,15 +35,14 @@ def get_spotprices(limit):
     header = {
       "Content-Type": "application/json;charset=utf-8"
     }
-    
+    # API sample request
+    # https://api.energidataservice.dk/dataset/Elspotprices?limit=2400&filter={"PriceArea":"DK2"}&sort=HourUTC%20desc
     url = f'{SPOTPRICE_API_URL}' \
-          f'resource_id=elspotprices&' \
+          f'Elspotprices?' \
           f'limit={limit}&' \
-          f'filters={{"PriceArea":"{SPOTPRICE_AREA}"}}&' \
-          f'sort=HourUTC desc'
-    
-    print(f"URL: {url}")
-
+          f'filter={{"PriceArea":"{SPOTPRICE_AREA}"}}&' \
+          f'sort=HourUTC%20desc'
+    # print(f"URL: {url}")
     return requests.get(url, headers=header).json()
 
   except Exception as ex:
@@ -78,7 +77,7 @@ def print_csv(spotprices):
   print("--------- Start CSV output ---------")
   print("HourDK;SpotPriceKwh")
   
-  for record in spotprices['result']['records']:
+  for record in spotprices['records']:
     kwh_price_in_DKK = float(record['SpotPriceEUR']) * 7.45 / 1000
     print(f"{record['HourDK']};{kwh_price_in_DKK}")
 
@@ -95,7 +94,10 @@ if __name__ == '__main__':
   else:
     spotprices = get_spotprices(SPOTPRICE_REQUEST_LIMIT)
   
-  write_to_influxdb(spotprice_records=spotprices['result']['records'])
+  write_to_influxdb(spotprice_records=spotprices['records'])
+
   # print(json.dumps(spotprices, indent=2))
   # print_csv(spotprices)
+  # with open('output.json', 'w') as outfile:
+  #   json.dump(spotprices['records'], outfile, indent=4)
   
