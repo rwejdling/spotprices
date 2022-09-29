@@ -1,5 +1,5 @@
 
-#!/bin/sh
+#!/bin/bash
 INTERVAL="${INTERVAL:=10}"
 while true; do
   echo "`date` - running script..."

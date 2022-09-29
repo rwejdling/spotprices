@@ -1,2 +1,4 @@
 requests
 influxdb-client
+SQLAlchemy
+psycopg2-binary

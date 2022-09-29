@@ -1,9 +1,22 @@
 version: "3"
 
 services:
-  server:
+  app:
     build: .
     container_name: spotprices
     restart: always
     env_file: 
       - '.env'
+  
+  db:
+    image: postgres:13
+    restart: always
+    env_file:
+      - '.env'
+  
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+

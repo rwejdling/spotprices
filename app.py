@@ -1,7 +1,6 @@
 # Fetches data from https://www.energidataservice.dk/tso-electricity/elspotprices
 # API documentation http://docs.ckan.org/en/latest/api/index.html#making-an-api-request
 
-from pickle import FALSE
 import time, json
 import requests
 from os import getenv, pipe
@@ -9,11 +8,19 @@ from datetime import datetime
 from dateutil.parser import parse
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from model import *
 
 INFLUXDB_TOKEN = getenv('INFLUXDB_TOKEN', None)
 INFLUXDB_ORG = getenv('INFLUXDB_ORG', None)
 INFLUXDB_BUCKET = getenv('INFLUXDB_BUCKET', 'default')
 INFLUXDB_URL = getenv('INFLUXDB_URL', 'http://localhost:8086')
+
+POSTGRES_USER = getenv('POSTGRES_USER', "postgres")
+POSTGRES_PASSWORD = getenv('POSTGRES_PASSWORD', "")
+POSTGRES_HOST = getenv('POSTGRES_HOST', 'db')
+POSTGRES_DB = getenv('POSTGRES_DB', 'spotprice')
 
 SPOTPRICE_API_URL = "https://api.energidataservice.dk/dataset/"
 
@@ -83,6 +90,20 @@ def print_csv(spotprices):
 
   print("--------- End of CSV output ---------")
 
+def db_connect(return_engine=False):
+  db_url =(
+    f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@"
+    f"{POSTGRES_HOST}/{POSTGRES_DB}"
+  )
+  engine = create_engine(db_url)
+
+  if return_engine:
+    return engine
+  else:
+    Session = sessionmaker()
+    Session.configure(bind=engine)
+    return Session()
+
 if __name__ == '__main__':
   '''
       For running locally
@@ -94,10 +115,12 @@ if __name__ == '__main__':
   else:
     spotprices = get_spotprices(SPOTPRICE_REQUEST_LIMIT)
   
-  write_to_influxdb(spotprice_records=spotprices['records'])
+  # write_to_influxdb(spotprice_records=spotprices['records'])
 
   # print(json.dumps(spotprices, indent=2))
   # print_csv(spotprices)
   # with open('output.json', 'w') as outfile:
   #   json.dump(spotprices['records'], outfile, indent=4)
   
+  db = db_connect(return_engine=True)
+  Base.metadata.create_all(db)
